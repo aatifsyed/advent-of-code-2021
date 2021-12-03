@@ -4,7 +4,7 @@ fn input() -> Vec<usize> {
     include_str!("./inputs/2021/1.txt")
         .lines()
         .map(str::parse::<usize>)
-        .collect::<Result<Vec<_>, _>>()
+        .collect::<Result<_, _>>()
         .expect("Couldn't parse input")
 }
 

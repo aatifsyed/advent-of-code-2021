@@ -23,7 +23,7 @@
 			"include_str!(\"inputs/${1:year}/${2:day}.txt\")",
 			".lines()",
 			".map(str::parse::<${3:ty}>)",
-			".collect::<Result<Vec<_>,_>>()",
+			".collect::<Result<${4:_},_>>()",
 			".expect(\"Couldn't parse input\")",
 			"}$0"
 		]
