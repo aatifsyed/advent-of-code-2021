@@ -5,6 +5,7 @@
 /// - Use fallible functions everywhere
 /// ## Missed tricks
 /// - gamma = bit-flipped epsilon
+/// - whatever the hell Chris P is doing https://github.com/ThePants999/advent-of-code-2021/blob/main/src/day3.rs
 use anyhow::anyhow;
 use array2d::Array2D;
 use itertools::Itertools;
