@@ -1,4 +1,5 @@
 /// There must be a better way...
+use anyhow::anyhow;
 use array2d::Array2D;
 use itertools::Itertools;
 use std::{
@@ -7,11 +8,39 @@ use std::{
     hash::Hash,
 };
 
-fn input() -> Array2D<char> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Bit {
+    Zero,
+    One,
+}
+
+impl TryFrom<char> for Bit {
+    type Error = anyhow::Error;
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '0' => Ok(Self::Zero),
+            '1' => Ok(Self::One),
+            _ => Err(anyhow!("Invalid bit: {}", value)),
+        }
+    }
+}
+
+impl From<&Bit> for char {
+    fn from(b: &Bit) -> Self {
+        match b {
+            Bit::Zero => '0',
+            Bit::One => '1',
+        }
+    }
+}
+
+fn input() -> Array2D<Bit> {
     let v = include_str!("inputs/2021/3.txt")
         .lines()
-        .map(|line| line.chars().collect_vec())
-        .collect_vec();
+        .map(|line| line.chars().map(Bit::try_from).try_collect())
+        .try_collect::<_, Vec<_>, _>()
+        .expect("Binary input");
     let arr = Array2D::from_rows(&v);
     arr
 }
@@ -46,20 +75,24 @@ fn least_common<T: Hash + Eq>(it: impl IntoIterator<Item = T>) -> Option<T> {
         .map(|(t, _count)| t)
 }
 
-fn gamma_rate(input: &Array2D<char>) -> usize {
+fn part1_generic<'a>(
+    input: &'a Array2D<Bit>,
+    mut select_bit_from_column: impl FnMut(Vec<&Bit>) -> &Bit, // Can't use fn(impl Iterator)...?
+) -> usize {
     let s = input
         .columns_iter()
-        .map(|row| most_common(row).expect("Non-empty"))
-        .collect::<String>();
-    usize::from_str_radix(&s, 2).expect("Only 1s and 0s")
-}
-
-fn epsilon_rate(input: &Array2D<char>) -> usize {
-    let s = input
-        .columns_iter()
-        .map(|row| least_common(row).expect("Non-empty"))
+        .map(|column| select_bit_from_column(column.collect_vec()))
+        .map(char::from)
         .collect::<String>();
     usize::from_str_radix(&s, 2).expect("Binary")
+}
+
+fn gamma_rate(input: &Array2D<Bit>) -> usize {
+    part1_generic(input, |v| most_common(v).expect("Non-empty"))
+}
+
+fn epsilon_rate(input: &Array2D<Bit>) -> usize {
+    part1_generic(input, |v| least_common(v).expect("Non-empty"))
 }
 
 #[test]
@@ -67,15 +100,15 @@ fn part1() {
     let input = &input();
     let epsilon = epsilon_rate(input);
     let gamma = gamma_rate(input);
-    assert_eq!(epsilon * gamma, 0)
+    assert_eq!(epsilon * gamma, 4139586)
 }
 
 // Well that was a lot of wasted work!
 // Let's just go imperative
-fn common_rating(input: &Array2D<char>, preferrer: impl Fn(Ordering) -> char) -> usize {
+fn part2_generic(input: &Array2D<Bit>, preferrer: impl Fn(HashMap<Bit, usize>) -> Bit) -> usize {
     let mut possible = input
         .rows_iter()
-        .map(Iterator::collect::<String>)
+        .map(|row| row.map(Clone::clone).collect_vec())
         .collect::<HashSet<_>>();
 
     for i in 0..input.num_columns() {
@@ -83,41 +116,42 @@ fn common_rating(input: &Array2D<char>, preferrer: impl Fn(Ordering) -> char) ->
             break;
         }
 
-        let counts = counts(
-            possible
-                .iter()
-                .map(|s| s.chars().nth(i).expect("Not indexing beyond num_columns")),
-        );
-
-        let num_zeroes = counts.get(&'0').unwrap_or(&0);
-        let num_ones = counts.get(&'1').unwrap_or(&0);
-
-        // Ew
-        let preferred = preferrer(num_zeroes.cmp(num_ones));
-
-        possible.retain(|s| {
-            let c = s.chars().nth(i).expect("Not indexing beyond num_columns");
-            c == preferred
-        });
+        let counts = counts(possible.iter().map(|s| s[i]));
+        let preferred = preferrer(counts);
+        possible.retain(|s| s[i] == preferred);
     }
     assert_eq!(possible.len(), 1);
-    let rating = possible.drain().next().expect("Non-empty");
+    let rating = possible
+        .drain()
+        .next()
+        .expect("Non-empty")
+        .iter()
+        .map(char::from)
+        .collect::<String>();
     usize::from_str_radix(&rating, 2).expect("Binary")
 }
 
-fn oxygen_generator_rating(input: &Array2D<char>) -> usize {
-    common_rating(input, |o| match o {
-        Ordering::Less => '1',
-        Ordering::Equal => '1',
-        Ordering::Greater => '0',
+fn oxygen_generator_rating(input: &Array2D<Bit>) -> usize {
+    part2_generic(input, |counts| {
+        let num_zeroes = counts.get(&Bit::Zero).unwrap_or(&0);
+        let num_ones = counts.get(&Bit::One).unwrap_or(&0);
+        match num_zeroes.cmp(num_ones) {
+            Ordering::Less => Bit::One,
+            Ordering::Equal => Bit::One,
+            Ordering::Greater => Bit::Zero,
+        }
     })
 }
 
-fn co2_scrubber_rating(input: &Array2D<char>) -> usize {
-    common_rating(input, |o| match o {
-        Ordering::Less => '0',
-        Ordering::Equal => '0',
-        Ordering::Greater => '1',
+fn co2_scrubber_rating(input: &Array2D<Bit>) -> usize {
+    part2_generic(input, |counts| {
+        let num_zeroes = counts.get(&Bit::Zero).unwrap_or(&0);
+        let num_ones = counts.get(&Bit::One).unwrap_or(&0);
+        match num_zeroes.cmp(num_ones) {
+            Ordering::Less => Bit::Zero,
+            Ordering::Equal => Bit::Zero,
+            Ordering::Greater => Bit::One,
+        }
     })
 }
 
@@ -137,8 +171,9 @@ fn example() {
         00010\n\
         01010"
         .lines()
-        .map(|line| line.chars().collect_vec())
-        .collect_vec();
+        .map(|line| line.chars().map(Bit::try_from).try_collect())
+        .try_collect::<_, Vec<_>, _>()
+        .expect("Binary input");
     let input = Array2D::from_rows(&s);
     let rating = oxygen_generator_rating(&input);
     assert_eq!(rating, 23);
@@ -152,5 +187,5 @@ fn part2() {
     let input = input();
     let o2_rating = oxygen_generator_rating(&input);
     let co2_rating = co2_scrubber_rating(&input);
-    assert_eq!(o2_rating * co2_rating, 0)
+    assert_eq!(o2_rating * co2_rating, 1800151)
 }
