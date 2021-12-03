@@ -1,4 +1,10 @@
 /// There must be a better way...
+/// ## Next time...
+/// - Try a derivable enum BitCount { Zero(usize) }...
+///   As a kind of perfect hashmap, maybe with a nice entry api!
+/// - Use fallible functions everywhere
+/// ## Missed tricks
+/// - gamma = bit-flipped epsilon
 use anyhow::anyhow;
 use array2d::Array2D;
 use itertools::Itertools;
@@ -36,7 +42,11 @@ impl From<&Bit> for char {
 }
 
 fn input() -> Array2D<Bit> {
-    let v = include_str!("inputs/2021/3.txt")
+    make_array(include_str!("inputs/2021/3.txt"))
+}
+
+fn make_array(s: &str) -> Array2D<Bit> {
+    let v = s
         .lines()
         .map(|line| line.chars().map(Bit::try_from).try_collect())
         .try_collect::<_, Vec<_>, _>()
@@ -84,7 +94,7 @@ fn part1_generic<'a>(
         .map(|column| select_bit_from_column(column.collect_vec()))
         .map(char::from)
         .collect::<String>();
-    usize::from_str_radix(&s, 2).expect("Binary")
+    usize::from_str_radix(&dbg!(s), 2).expect("Binary")
 }
 
 fn gamma_rate(input: &Array2D<Bit>) -> usize {
@@ -169,12 +179,8 @@ fn example() {
         10000\n\
         11001\n\
         00010\n\
-        01010"
-        .lines()
-        .map(|line| line.chars().map(Bit::try_from).try_collect())
-        .try_collect::<_, Vec<_>, _>()
-        .expect("Binary input");
-    let input = Array2D::from_rows(&s);
+        01010";
+    let input = make_array(s);
     let rating = oxygen_generator_rating(&input);
     assert_eq!(rating, 23);
 
