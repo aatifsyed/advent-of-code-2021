@@ -4,11 +4,12 @@ use std::{
 };
 
 use anyhow::{anyhow, Context};
-use itertools::Itertools;
+use array2d::Array2D;
+use itertools::{zip, Itertools};
 
 #[derive(Debug)]
 struct Game {
-    draw: Vec<u8>,
+    draws: Vec<u8>,
     boards: Vec<Board>,
 }
 
@@ -32,44 +33,58 @@ impl FromStr for Game {
             .try_collect()
             .context("Boards")?;
 
-        Ok(Game { draw, boards })
+        Ok(Game {
+            draws: draw,
+            boards,
+        })
     }
 }
 
 #[derive(Debug)]
 struct Board {
-    array: [[Mark<u8>; 5]; 5],
-}
-
-impl Board {
-    fn wins(&self) -> bool {
-        todo!()
-    }
-    fn rows(&self) -> impl IntoIterator<Item = &[Mark<u8>; 5]> {
-        self.array.iter()
-    }
+    array: Array2D<Mark<u8>>,
 }
 
 impl FromStr for Board {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let array = s
-            .lines()
-            .map(|line| {
-                let array = line
-                    .split_whitespace()
-                    .map(str::parse)
-                    .map_ok(Mark::unmarked)
-                    .collect::<Result<Vec<_>, _>>()?
-                    .try_into()
-                    .map_err(|_| anyhow!("Vec has wrong length"))?;
-                anyhow::Ok(array)
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .try_into()
-            .map_err(|_| anyhow!("Vec has wrong length"))?;
-        Ok(Board { array })
+        let lin = s
+            .split_whitespace()
+            .map(str::parse)
+            .map_ok(Mark::unmarked)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Board {
+            array: Array2D::from_row_major(&lin, 5, 5),
+        })
+    }
+}
+
+impl Board {
+    fn winner(&self) -> bool {
+        let winning_column = self
+            .array
+            .columns_iter()
+            .map(|column| column.into_iter().all(Mark::is_marked))
+            .any(|winning_column| winning_column == true);
+
+        let winning_row = self
+            .array
+            .rows_iter()
+            .map(|row| row.into_iter().all(Mark::is_marked))
+            .any(|winning_row| winning_row == true);
+
+        // ^-_
+        let descending = (0..5)
+            .map(|co| self.array.get(co, co).unwrap())
+            .all(Mark::is_marked);
+
+        // _-^
+        let ascending = zip(0..5, (0..5).rev())
+            .map(|(row, column)| self.array.get(row, column).unwrap())
+            .all(Mark::is_marked);
+
+        winning_column || winning_row || descending || ascending
     }
 }
 
@@ -149,4 +164,30 @@ fn test_parse_example() -> anyhow::Result<()> {
 
     println!("game = {:?}", game);
     Ok(())
+}
+
+#[test]
+fn winning() -> anyhow::Result<()> {
+    let x = Mark::Marked(0);
+    let o = Mark::Unmarked(0);
+    let arr = [
+        [x, o, o, x, x],
+        [x, x, x, x, x],
+        [x, x, x, o, x],
+        [o, x, o, o, o],
+        [x, o, o, x, x],
+    ];
+    let array = Array2D::from_iter_row_major(arr.into_iter().flatten(), 5, 5);
+    println!("arr = {:?}", array);
+
+    assert!(Board { array }.winner());
+    Ok(())
+}
+
+fn find_winner(mut game: Game) {
+    for draw in game.draws {
+        for board in game.boards {
+            board.array.mu
+        }
+    }
 }
