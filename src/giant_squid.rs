@@ -1,3 +1,5 @@
+/// # Next time
+/// - Use a set for each row, column, so you can just test for membership
 use anyhow::Context;
 use itertools::{zip, Itertools};
 use ndarray::Array2;
