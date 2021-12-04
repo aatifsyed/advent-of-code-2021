@@ -1,11 +1,10 @@
+use anyhow::Context;
+use itertools::{zip, Itertools};
+use ndarray::Array2;
 use std::{
     ops::{Deref, DerefMut},
     str::FromStr,
 };
-
-use anyhow::{anyhow, Context};
-use array2d::Array2D;
-use itertools::{zip, Itertools};
 
 #[derive(Debug)]
 struct Game {
@@ -40,9 +39,9 @@ impl FromStr for Game {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Board {
-    array: Array2D<Mark<u8>>,
+    array: Array2<Mark<u8>>,
 }
 
 impl FromStr for Board {
@@ -55,7 +54,7 @@ impl FromStr for Board {
             .map_ok(Mark::unmarked)
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Board {
-            array: Array2D::from_row_major(&lin, 5, 5),
+            array: Array2::from_shape_vec((5, 5), lin)?,
         })
     }
 }
@@ -64,24 +63,26 @@ impl Board {
     fn winner(&self) -> bool {
         let winning_column = self
             .array
-            .columns_iter()
+            .columns()
+            .into_iter()
             .map(|column| column.into_iter().all(Mark::is_marked))
             .any(|winning_column| winning_column == true);
 
         let winning_row = self
             .array
-            .rows_iter()
+            .rows()
+            .into_iter()
             .map(|row| row.into_iter().all(Mark::is_marked))
             .any(|winning_row| winning_row == true);
 
         // ^-_
         let descending = (0..5)
-            .map(|co| self.array.get(co, co).unwrap())
+            .map(|co| self.array.get((co, co)).unwrap())
             .all(Mark::is_marked);
 
         // _-^
         let ascending = zip(0..5, (0..5).rev())
-            .map(|(row, column)| self.array.get(row, column).unwrap())
+            .map(|(row, column)| self.array.get((row, column)).unwrap())
             .all(Mark::is_marked);
 
         winning_column || winning_row || descending || ascending
@@ -171,23 +172,53 @@ fn winning() -> anyhow::Result<()> {
     let x = Mark::Marked(0);
     let o = Mark::Unmarked(0);
     let arr = [
-        [x, o, o, x, x],
-        [x, x, x, x, x],
-        [x, x, x, o, x],
+        // [o, o, o, o, o],
+        // [x, x, x, x, x],
+        [o, o, o, o, x],
+        [o, o, o, x, o],
+        [o, o, x, o, o],
         [o, x, o, o, o],
-        [x, o, o, x, x],
+        [x, o, o, o, o],
     ];
-    let array = Array2D::from_iter_row_major(arr.into_iter().flatten(), 5, 5);
+    let array = Array2::from_shape_vec((5, 5), arr.into_iter().flatten().collect_vec())?;
     println!("arr = {:?}", array);
 
     assert!(Board { array }.winner());
     Ok(())
 }
 
-fn find_winner(mut game: Game) {
-    for draw in game.draws {
-        for board in game.boards {
-            board.array.mu
+fn get_winning_draw(mut game: Game) -> (Board, u8) {
+    'ret: loop {
+        for draw in game.draws {
+            for board in &mut game.boards {
+                for element in board.array.iter_mut() {
+                    if **element == draw {
+                        element.mark()
+                    }
+                }
+            }
+            if let Some(winner) = game.boards.iter().find(|b| b.winner()) {
+                break 'ret (winner.clone(), draw);
+            }
         }
+        unreachable!()
     }
+}
+
+#[test]
+fn part1() {
+    let game = include_str!("./inputs/2021/4.txt").parse::<Game>().unwrap();
+    let (winner, draw) = get_winning_draw(game);
+
+    let checksum = winner
+        .array
+        .into_raw_vec()
+        .into_iter()
+        .filter_map(|mark| match mark {
+            Mark::Marked(_) => None,
+            Mark::Unmarked(t) => Some(t as usize),
+        })
+        .sum::<usize>()
+        * draw as usize;
+    assert_eq!(checksum, 0);
 }
