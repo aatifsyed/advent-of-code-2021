@@ -1,5 +1,9 @@
+/// # Next time
+/// - Better integration with geo crate etc
+/// - More efficient lattice points iterator
 use std::{cmp, collections::HashMap, iter};
 
+use num::{integer::gcd, rational::Ratio};
 use recap::Recap;
 use serde::Deserialize;
 
@@ -7,17 +11,17 @@ use crate::utils::CountOccurences;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
-    x: usize,
-    y: usize,
+    x: isize,
+    y: isize,
 }
 /// Offload parsing to [`recap`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Recap)]
 #[recap(regex = r"(?P<x1>\d+),(?P<y1>\d+) -> (?P<x2>\d+),(?P<y2>\d+)")]
 struct Segment {
-    x1: usize,
-    y1: usize,
-    x2: usize,
-    y2: usize,
+    x1: isize,
+    y1: isize,
+    x2: isize,
+    y2: isize,
 }
 
 impl Segment {
@@ -27,38 +31,50 @@ impl Segment {
     fn is_horizontal(&self) -> bool {
         self.y1 == self.y2
     }
-    fn xs(&self) -> Vec<usize> {
-        if self.x2 > self.x1 {
-            (self.x1..=self.x2).collect()
-        } else {
-            (self.x2..=self.x1).rev().collect()
+    fn lattice_points(&self) -> Vec<Point> {
+        let dy = self.y2 - self.y1;
+        let dx = self.x2 - self.x1;
+
+        let start = Point {
+            x: self.x1,
+            y: self.y1,
+        };
+        let end = Point {
+            x: self.x2,
+            y: self.y2,
+        };
+
+        if self.is_vertical() {
+            return iter::successors(Some(start), |previous| match *previous == end {
+                true => None,
+                false => Some(Point {
+                    x: previous.x,
+                    y: previous.y + dy.signum(),
+                }),
+            })
+            .collect();
         }
+
+        let divisor = gcd(dy, dx);
+        let dy = dy / divisor;
+        let dx = dx / divisor;
+
+        iter::successors(Some(start), |previous| match *previous == end {
+            true => None,
+            false => Some(Point {
+                x: previous.x + dx,
+                y: previous.y + dy,
+            }),
+        })
+        .collect()
     }
-    fn ys(&self) -> Vec<usize> {
-        if self.y2 > self.y1 {
-            (self.y1..=self.y2).collect()
-        } else {
-            (self.y2..=self.y1).rev().collect()
-        }
-    }
-    fn points(&self) -> Vec<Point> {
-        if self.is_horizontal() {
-            self.xs()
-                .into_iter()
-                .map(|x| Point { x, y: self.y1 })
-                .collect()
-        } else if self.is_vertical() {
-            self.ys()
-                .into_iter()
-                .map(|y| Point { x: self.x1, y })
-                .collect()
-        } else {
-            assert_eq!(self.xs().len(), self.ys().len(), "must be diagonal");
-            iter::zip(self.xs(), self.ys())
-                .map(|(x, y)| Point { x, y })
-                .collect()
-        }
-    }
+}
+
+#[test]
+fn test_lattice_points() -> anyhow::Result<()> {
+    let points = "9,7 -> 7,7".parse::<Segment>()?.lattice_points();
+    println!("points = {:?}", points);
+    Ok(())
 }
 
 fn input() -> Vec<Segment> {
@@ -74,7 +90,7 @@ fn part1() {
     let count = input()
         .into_iter()
         .filter(|segment| segment.is_horizontal() || segment.is_vertical())
-        .map(|s| s.points())
+        .map(|s| s.lattice_points())
         .flatten()
         .count_occurences()
         .drain_filter(|_, count| *count >= 2)
@@ -86,10 +102,10 @@ fn part1() {
 fn part2() {
     let count = input()
         .into_iter()
-        .map(|s| s.points())
+        .map(|s| s.lattice_points())
         .flatten()
         .count_occurences()
         .drain_filter(|_, count| *count >= 2)
         .count();
-    assert_eq!(count, 6461);
+    assert_eq!(count, 18065);
 }
