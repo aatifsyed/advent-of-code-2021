@@ -5,3 +5,4 @@ mod binary_diagnostic;
 mod dive;
 mod sonar_sweep;
 mod giant_squid;
+mod hydrothermal_venture;
