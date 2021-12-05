@@ -1,13 +1,11 @@
-/// # Next time
-/// - Better integration with geo crate etc
-/// - More efficient lattice points iterator
-use std::{cmp, collections::HashMap, iter};
-
-use num::{integer::gcd, rational::Ratio};
+//! # Next time
+//! - Better integration with geo crate etc
+//! - More efficient lattice points iterator
+#[cfg(test)]
+use crate::utils::CountOccurences;
+use num::integer::gcd;
 use recap::Recap;
 use serde::Deserialize;
-
-use crate::utils::CountOccurences;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
@@ -35,46 +33,24 @@ impl Segment {
         let dy = self.y2 - self.y1;
         let dx = self.x2 - self.x1;
 
-        let start = Point {
-            x: self.x1,
-            y: self.y1,
-        };
-        let end = Point {
-            x: self.x2,
-            y: self.y2,
-        };
-
         if self.is_vertical() {
-            return iter::successors(Some(start), |previous| match *previous == end {
-                true => None,
-                false => Some(Point {
-                    x: previous.x,
-                    y: previous.y + dy.signum(),
-                }),
-            })
-            .collect();
+            return num::range_step_inclusive(self.y1, self.y2, dy.signum())
+                .map(|y| Point { x: self.x1, y })
+                .collect();
         }
 
         let divisor = gcd(dy, dx);
         let dy = dy / divisor;
         let dx = dx / divisor;
 
-        iter::successors(Some(start), |previous| match *previous == end {
-            true => None,
-            false => Some(Point {
-                x: previous.x + dx,
-                y: previous.y + dy,
-            }),
-        })
-        .collect()
+        num::range_step_inclusive(self.x1, self.x2, dx.signum())
+            .enumerate()
+            .map(|(count, x)| Point {
+                x,
+                y: self.y1 + (dy * count as isize),
+            })
+            .collect()
     }
-}
-
-#[test]
-fn test_lattice_points() -> anyhow::Result<()> {
-    let points = "9,7 -> 7,7".parse::<Segment>()?.lattice_points();
-    println!("points = {:?}", points);
-    Ok(())
 }
 
 fn input() -> Vec<Segment> {

@@ -14,6 +14,7 @@ dependencies = [
  "itertools",
  "log",
  "ndarray",
+ "no-panic",
  "nom",
  "num",
  "recap",
@@ -956,6 +957,17 @@ dependencies = [
  "num-integer",
  "num-traits",
  "rawpointer",
+]
+
+[[package]]
+name = "no-panic"
+version = "0.1.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b884e0f4a7a80970539a7757902675ce503d98615f5b564564b4bd0236f7f36"
+dependencies = [
+ "proc-macro2 1.0.32",
+ "quote 1.0.10",
+ "syn 1.0.82",
 ]
 
 [[package]]
