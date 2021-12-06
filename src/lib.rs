@@ -13,3 +13,4 @@ mod giant_squid;
 mod hydrothermal_venture;
 mod sonar_sweep;
 mod utils;
+mod lanternfish;

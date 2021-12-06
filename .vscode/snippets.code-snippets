@@ -19,7 +19,7 @@
 		"scope": "rust",
 		"prefix": "fn input",
 		"body": [
-			"fn input() -> Vec<Item = ${3:ty}> {",
+			"fn input() -> Vec<${3:ty}> {",
 			"include_str!(\"inputs/${1:year}/${2:day}.txt\")",
 			".lines()",
 			".map(str::parse::<${3:ty}>)",
