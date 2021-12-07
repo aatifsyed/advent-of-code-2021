@@ -15,3 +15,4 @@ mod hydrothermal_venture;
 mod lanternfish;
 mod sonar_sweep;
 mod utils;
+mod treachery_of_whales;

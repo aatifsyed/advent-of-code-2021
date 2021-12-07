@@ -5,3 +5,4 @@
 - 2021, day 04: [giant_squid](./src/giant_squid.rs) Average
 - 2021, day 05: [hydrothermal_venture](./src/hydrothermal_venture.rs) Good
 - 2021, day 06: [lanternfish](./src/lanternfish.rs) Good
+- 2021, day 07: [treachery_of_whales](./src/treachery_of_whales.rs)
