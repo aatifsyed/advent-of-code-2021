@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use anyhow::Context;
 use num::Num;
 
@@ -29,43 +31,6 @@ fn do_part1(input: &str) -> anyhow::Result<usize> {
     Ok(min_cost as usize)
 }
 
-fn optimized(input: &str) -> anyhow::Result<(usize, usize)> {
-    let mut positions = parse(input)?;
-    let mean = mean(&positions); // position part 1
-    let median = *median(&mut positions).context("Empty")?; // position part 2
-
-    let mut part1 = 0;
-    let mut part2 = 0;
-
-    for position in positions {
-        part1 += position.abs_diff(median);
-        part2 += gaussian_sum(position.abs_diff(mean));
-    }
-
-    Ok((part1, part2))
-}
-
-fn gaussian_sum(to: usize) -> usize {
-    // n(n+1)
-    //   2
-    (to * (to + 1)) / 2
-}
-
-fn mean<T: Num + Copy>(of: &[T]) -> T {
-    let (total, length) = of
-        .iter()
-        .fold((T::zero(), T::zero()), |(total, length), el| {
-            (total + *el, length + T::one())
-        });
-    total / length
-}
-
-fn median<T: Num + Ord>(of: &mut [T]) -> Option<&T> {
-    of.sort_unstable();
-    let halfway = of.len() / 2;
-    of.get(halfway)
-}
-
 fn do_part2(input: &str) -> anyhow::Result<usize> {
     let positions = parse(input)?;
     let max = positions.iter().max().context("Must have one input")?;
@@ -88,4 +53,44 @@ benchtest::benchtest! {
 
     part2_brute: do_part2(test::black_box(INPUT)).unwrap() => 87640209,
     both_optimized: optimized(test::black_box(INPUT)).unwrap() => (323647, 87640209)
+}
+
+fn optimized(input: &str) -> anyhow::Result<(usize, usize)> {
+    let mut positions = parse(input)?;
+    let median = *median(&mut positions).context("Empty")?; // position part 1
+    let mean_lower = mean(&positions); // position part 2
+    let mean_upper = mean_lower + 1;
+
+    let mut part1 = 0;
+    let mut part2_lower = 0;
+    let mut part2_upper = 0;
+
+    for position in positions {
+        part1 += position.abs_diff(median);
+        part2_lower += gaussian_sum(position.abs_diff(mean_upper));
+        part2_upper += gaussian_sum(position.abs_diff(mean_lower));
+    }
+
+    Ok((part1, min(part2_lower, part2_upper)))
+}
+
+fn gaussian_sum(to: usize) -> usize {
+    // n(n+1)
+    //   2
+    (to * (to + 1)) / 2
+}
+
+fn mean<T: Num + Copy>(of: &[T]) -> T {
+    let (total, length) = of
+        .iter()
+        .fold((T::zero(), T::zero()), |(total, length), el| {
+            (total + *el, length + T::one())
+        });
+    total / length
+}
+
+fn median<T: Num + Ord>(of: &mut [T]) -> Option<&T> {
+    of.sort_unstable();
+    let halfway = of.len() / 2;
+    of.get(halfway)
 }
