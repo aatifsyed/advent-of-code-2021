@@ -8,7 +8,7 @@
     test
 )]
 
-mod binary_diagnostic; // TODO bench
+mod binary_diagnostic;
 mod dive;
 mod giant_squid;
 mod hydrothermal_venture;

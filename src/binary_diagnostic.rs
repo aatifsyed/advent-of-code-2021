@@ -42,16 +42,12 @@ impl From<&Bit> for char {
     }
 }
 
-fn input() -> Array2D<Bit> {
-    make_array(include_str!("inputs/2021/3.txt"))
-}
-
 fn make_array(s: &str) -> Array2D<Bit> {
     let v = s
         .lines()
         .map(|line| line.chars().map(Bit::try_from).try_collect())
         .try_collect::<_, Vec<_>, _>()
-        .expect("Binary input");
+        .expect("Binary input"); // TODO no panic
     let arr = Array2D::from_rows(&v);
     arr
 }
@@ -104,14 +100,6 @@ fn gamma_rate(input: &Array2D<Bit>) -> usize {
 
 fn epsilon_rate(input: &Array2D<Bit>) -> usize {
     part1_generic(input, |v| least_common(v).expect("Non-empty"))
-}
-
-#[test]
-fn part1_() {
-    let input = &input();
-    let epsilon = epsilon_rate(input);
-    let gamma = gamma_rate(input);
-    assert_eq!(epsilon * gamma, 4139586)
 }
 
 // Well that was a lot of wasted work!
@@ -189,10 +177,24 @@ fn example() {
     assert_eq!(rating, 10);
 }
 
-#[test]
-fn part2_() {
-    let input = input();
+extern crate test;
+
+const INPUT: &str = include_str!("./inputs/2021/3.txt");
+
+fn do_part1(input: &str) -> anyhow::Result<usize> {
+    let input = make_array(input);
+    let epsilon = epsilon_rate(&input);
+    let gamma = gamma_rate(&input);
+    Ok(epsilon * gamma)
+}
+fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let input = make_array(input);
     let o2_rating = oxygen_generator_rating(&input);
     let co2_rating = co2_scrubber_rating(&input);
-    assert_eq!(o2_rating * co2_rating, 1800151)
+    Ok(o2_rating * co2_rating)
+}
+
+benchtest::benchtest! {
+    part1: do_part1(test::black_box(INPUT)).unwrap() => 4139586,
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 1800151
 }

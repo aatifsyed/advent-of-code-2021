@@ -12,6 +12,7 @@ async-std = { version = "1.10.0", features = ["attributes"] }
 benchtest = "0.1.1"
 derive_more = "0.99.17"
 geo = "0.18.0"
+grid = "0.6.0"
 itertools = "0.10.1"
 log = "0.4.14"
 ndarray = "0.15.4"
