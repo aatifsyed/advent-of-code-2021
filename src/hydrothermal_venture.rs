@@ -1,11 +1,44 @@
 //! # Next time
 //! - Better integration with geo crate etc
 //! - More efficient lattice points iterator
-#[cfg(test)]
 use crate::utils::CountOccurences;
 use num::integer::gcd;
 use recap::Recap;
 use serde::Deserialize;
+
+use anyhow::Context;
+
+extern crate test;
+
+const INPUT: &str = include_str!("./inputs/2021/5.txt");
+
+fn do_part1(input: &str) -> anyhow::Result<usize> {
+    let count = parse(input)?
+        .into_iter()
+        .filter(|segment| segment.is_horizontal() || segment.is_vertical())
+        .map(|s| s.lattice_points())
+        .flatten()
+        .count_occurences()
+        .drain_filter(|_, count| *count >= 2)
+        .count();
+    Ok(count)
+}
+
+fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let count = parse(input)?
+        .into_iter()
+        .map(|s| s.lattice_points())
+        .flatten()
+        .count_occurences()
+        .drain_filter(|_, count| *count >= 2)
+        .count();
+    Ok(count)
+}
+
+benchtest::benchtest! {
+    part1: do_part1(test::black_box(INPUT)).unwrap() => 6461,
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 18065
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Point {
@@ -53,35 +86,10 @@ impl Segment {
     }
 }
 
-fn input() -> Vec<Segment> {
-    include_str!("inputs/2021/5.txt")
+fn parse(input: &str) -> anyhow::Result<Vec<Segment>> {
+    input
         .lines()
         .map(str::parse::<Segment>)
         .collect::<Result<_, _>>()
-        .expect("Couldn't parse input")
-}
-
-#[test]
-fn part1() {
-    let count = input()
-        .into_iter()
-        .filter(|segment| segment.is_horizontal() || segment.is_vertical())
-        .map(|s| s.lattice_points())
-        .flatten()
-        .count_occurences()
-        .drain_filter(|_, count| *count >= 2)
-        .count();
-    assert_eq!(count, 6461);
-}
-
-#[test]
-fn part2() {
-    let count = input()
-        .into_iter()
-        .map(|s| s.lattice_points())
-        .flatten()
-        .count_occurences()
-        .drain_filter(|_, count| *count >= 2)
-        .count();
-    assert_eq!(count, 18065);
+        .context("Invalid input format")
 }

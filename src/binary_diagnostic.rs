@@ -107,7 +107,7 @@ fn epsilon_rate(input: &Array2D<Bit>) -> usize {
 }
 
 #[test]
-fn part1() {
+fn part1_() {
     let input = &input();
     let epsilon = epsilon_rate(input);
     let gamma = gamma_rate(input);
@@ -190,7 +190,7 @@ fn example() {
 }
 
 #[test]
-fn part2() {
+fn part2_() {
     let input = input();
     let o2_rating = oxygen_generator_rating(&input);
     let co2_rating = co2_scrubber_rating(&input);

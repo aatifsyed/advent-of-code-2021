@@ -1,12 +1,30 @@
-use anyhow::{anyhow, Context};
+use anyhow::{bail, Context};
 use std::str::FromStr;
 
-fn input() -> Vec<DiveInstruction> {
-    include_str!("./inputs/2021/2.txt")
+extern crate test;
+
+const INPUT: &str = include_str!("./inputs/2021/2.txt");
+
+fn parse(input: &str) -> anyhow::Result<Vec<DiveInstruction>> {
+    input
         .lines()
         .map(str::parse::<DiveInstruction>)
         .collect::<Result<_, _>>()
-        .expect("Couldn't parse input")
+        .context("Invalid input format")
+}
+
+fn do_part1(input: &str) -> anyhow::Result<usize> {
+    let pos = follow_course(parse(input)?);
+    Ok(pos.horizontal * pos.depth)
+}
+fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let pos = follow_course_aim(parse(input)?);
+    Ok(pos.horizontal * pos.depth)
+}
+
+benchtest::benchtest! {
+    part1: do_part1(test::black_box(INPUT)).unwrap() => 1524750,
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 1592426537
 }
 
 enum DiveInstruction {
@@ -26,7 +44,7 @@ impl FromStr for DiveInstruction {
             "forward" => Self::Forward(num),
             "up" => Self::Up(num),
             "down" => Self::Down(num),
-            other => return Err(anyhow!("Invalid instruction: {}", other)),
+            other => bail!("Invalid instruction: {}", other),
         };
         Ok(dive_instruction)
     }
@@ -67,18 +85,4 @@ fn follow_course_aim(input: impl IntoIterator<Item = DiveInstruction>) -> Positi
         },
     );
     pos
-}
-
-#[test]
-fn part1() {
-    let pos = follow_course(input());
-    let res = pos.horizontal * pos.depth;
-    assert_eq!(res, 1524750)
-}
-
-#[test]
-fn part2() {
-    let pos = follow_course_aim(input());
-    let res = pos.horizontal * pos.depth;
-    assert_eq!(res, 1592426537)
 }

@@ -15,17 +15,26 @@
 	// 	],
 	// 	"description": "Log output to console"
 	// }
-	"Input": {
-		"scope": "rust",
-		"prefix": "fn input",
+	"Advent of Code Template": {
+		"prefix": "fn part",
 		"body": [
-			"fn input() -> Vec<${3:ty}> {",
-			"include_str!(\"inputs/${1:year}/${2:day}.txt\")",
-			".lines()",
-			".map(str::parse::<${3:ty}>)",
-			".collect::<Result<${4:_},_>>()",
-			".expect(\"Couldn't parse input\")",
-			"}$0"
+			"use anyhow::Context;",
+			"",
+			"extern crate test;",
+			"",
+			"const INPUT: &str = include_str!(\"./inputs/${1:2021}/${2:day}.txt\");",
+			"",
+			"fn do_part1(input: &str) -> anyhow::Result<usize> {",
+			"    Ok(0)",
+			"}",
+			"fn do_part2(input: &str) -> anyhow::Result<usize> {",
+			"    Ok(0)",
+			"}",
+			"",
+			"benchtest::benchtest! {",
+			"    part1: do_part1(test::black_box(INPUT)).unwrap() => 0,",
+			"    part2: do_part2(test::black_box(INPUT)).unwrap() => 0",
+			"}",
 		]
-	},
+	}
 }

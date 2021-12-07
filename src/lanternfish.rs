@@ -1,13 +1,39 @@
 //! Wrestled with Iterator and IntoIterator here, but they didn't seem to fit really
 use anyhow::ensure;
 
-fn input() -> Vec<usize> {
-    include_str!("inputs/2021/6.txt")
+use anyhow::Context;
+
+extern crate test;
+
+const INPUT: &str = include_str!("./inputs/2021/6.txt");
+
+fn do_part1(input: &str) -> anyhow::Result<usize> {
+    let mut fish = LanternFish::try_from_iter(parse(input)?).unwrap();
+    for _ in 0..80 {
+        fish = fish.step_simulation()
+    }
+    Ok(fish.total())
+}
+fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let mut fish = LanternFish::try_from_iter(parse(input)?).unwrap();
+    for _ in 0..256 {
+        fish = fish.step_simulation()
+    }
+    Ok(fish.total())
+}
+
+benchtest::benchtest! {
+    part1: do_part1(test::black_box(INPUT)).unwrap() => 390011,
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 1746710169834
+}
+
+fn parse(input: &str) -> anyhow::Result<Vec<usize>> {
+    input
         .trim()
         .split(',')
         .map(str::parse::<usize>)
         .collect::<Result<_, _>>()
-        .expect("Couldn't parse input")
+        .context("Invalid input format")
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -34,24 +60,4 @@ impl LanternFish {
         self.timers[6] += create; // day 8 will rotate through
         self
     }
-}
-
-#[test]
-fn part1() {
-    let mut fish = LanternFish::try_from_iter(input()).unwrap();
-    for _ in 0..80 {
-        fish = fish.step_simulation()
-    }
-    let total = fish.total();
-    assert_eq!(total, 390011)
-}
-
-#[test]
-fn part2() {
-    let mut fish = LanternFish::try_from_iter(input()).unwrap();
-    for _ in 0..256 {
-        fish = fish.step_simulation()
-    }
-    let total = fish.total();
-    assert_eq!(total, 1746710169834)
 }

@@ -201,70 +201,28 @@ impl<T> DerefMut for Mark<T> {
     }
 }
 
-#[test]
-fn test_example() -> anyhow::Result<()> {
-    let mut game = "7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
+extern crate test;
 
-22 13 17 11  0
- 8  2 23  4 24
-21  9 14 16  7
- 6 10  3 18  5
- 1 12 20 15 19
+const INPUT: &str = include_str!("./inputs/2021/4.txt");
 
- 3 15  0  2 22
- 9 18 13 17  5
-19  8  7 25 23
-20 11 10 24  4
-14 21 16 12  6
-
-14 21 17 24  4
-10 16 15  9 19
-18  8 23 26 20
-22 11 13  6  5
- 2  0 12  3  7"
-        .parse::<Game>()?;
-
-    let first = game.next().unwrap();
-    assert!(first.0.winner());
-    println!("first = {:?}", first.0);
-    assert_eq!(first.1, 24);
-    assert_eq!(first.0.sum_unmarked(), 188);
-    Ok(())
-}
-
-#[test]
-fn winning() -> anyhow::Result<()> {
-    let x = Mark::Marked(0);
-    let o = Mark::Unmarked(0);
-    let arr = [
-        [o, o, o, o, o],
-        [x, x, x, x, x],
-        [o, o, o, o, o],
-        [o, o, o, o, o],
-        [o, o, o, o, o],
-    ];
-    let array = Array2::from_shape_vec((5, 5), arr.into_iter().flatten().collect_vec())?;
-    println!("arr = {:?}", array);
-
-    assert!(Board { array }.winner());
-    Ok(())
-}
-
-fn input() -> Game {
-    include_str!("./inputs/2021/4.txt").parse().unwrap()
-}
-
-#[test]
-fn part1() {
-    let (winner, draw) = input().next().unwrap();
-
+fn do_part1(input: &str) -> anyhow::Result<usize> {
+    let (winner, draw) = input
+        .parse::<Game>()?
+        .next()
+        .context("Game has no winner")?;
     let checksum = winner.sum_unmarked() * draw as usize;
-    assert_eq!(checksum, 27027);
+    Ok(checksum)
 }
-#[test]
-fn part2() {
-    let (last_winner, draw) = input().last().unwrap();
+fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let (winner, draw) = input
+        .parse::<Game>()?
+        .last()
+        .context("Game has no winner")?;
+    let checksum = winner.sum_unmarked() * draw as usize;
+    Ok(checksum)
+}
 
-    let checksum = last_winner.sum_unmarked() * draw as usize;
-    assert_eq!(checksum, 36975);
+benchtest::benchtest! {
+    part1: do_part1(test::black_box(INPUT)).unwrap() => 27027,
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 36975
 }
