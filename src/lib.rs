@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 #![feature(
-    try_blocks,
-    option_result_contains,
     bool_to_option,
     hash_drain_filter,
+    int_abs_diff,
     iter_zip,
-    test
+    option_result_contains,
+    test,
+    try_blocks
 )]
 
 mod binary_diagnostic;
@@ -14,5 +15,5 @@ mod giant_squid;
 mod hydrothermal_venture;
 mod lanternfish;
 mod sonar_sweep;
-mod utils;
 mod treachery_of_whales;
+mod utils;
