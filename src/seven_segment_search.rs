@@ -16,56 +16,40 @@ impl Observation {
         let mut inputs = self.inputs;
         let one = remove(&mut inputs, |set| set.len() == 2)?;
         let four = remove(&mut inputs, |set| set.len() == 4)?;
-        let seven = remove(&mut inputs, |set| set.len() == 3)?;
-        let eight = remove(&mut inputs, |set| set.len() == 7)?;
-        let three = remove(&mut inputs, |set| {
-            set.len() == 5 && set.intersection(&seven).count() == 3
-        })?;
-        let nine = remove(&mut inputs, |set| {
-            set.len() == 6 && set.intersection(&seven).count() == 3
-        })?;
-        let zero = remove(&mut inputs, |set| {
-            set.len() == 6 && set.intersection(&one).count() == 1
-        })?;
-        let two = remove(&mut inputs, |set| {
-            set.len() == 5 && set.intersection(&four).count() == 2
-        })?;
-        let five = remove(&mut inputs, |set| {
-            set.len() == 5 && set.intersection(&four).count() == 3
-        })?;
-        let six = remove(&mut inputs, |set| {
-            set.len() == 6 && set.intersection(&one).count() == 0
-        })?;
-        let value = self
+
+        let res = self
             .outputs
-            .into_iter()
-            .map(|set| {
-                if set == zero {
-                    '0'
-                } else if set == one {
-                    '1'
-                } else if set == two {
-                    '2'
-                } else if set == three {
-                    '3'
-                } else if set == four {
-                    '4'
-                } else if set == five {
-                    '5'
-                } else if set == six {
-                    '6'
-                } else if set == seven {
-                    '7'
-                } else if set == eight {
-                    '8'
-                } else if set == nine {
-                    '9'
-                } else {
-                    '!'
+            .iter()
+            .map(|d| match d.len() {
+                2 => '1',
+                3 => '7',
+                4 => '4',
+                7 => '8',
+                5 => {
+                    if d.is_superset(&one) {
+                        '3'
+                    } else {
+                        match d.intersection(&four).count() {
+                            2 => '2',
+                            3 => '5',
+                            _ => panic!("decoding {:?}, one: {:?}, four: {:?}", d, one, four),
+                        }
+                    }
                 }
+                6 => {
+                    if d.is_superset(&four) {
+                        '9'
+                    } else if d.is_superset(&one) {
+                        '0'
+                    } else {
+                        '6'
+                    }
+                }
+                _ => todo!("handle gracefully"),
             })
             .collect::<String>();
-        Ok(value.parse()?)
+
+        Ok(res.parse()?)
     }
 }
 
@@ -75,7 +59,7 @@ fn remove<T>(v: &mut Vec<T>, mut predicate: impl FnMut(&T) -> bool) -> anyhow::R
         .find_position(|t| predicate(*t))
         .context("Not found")?
         .0;
-    Ok(v.swap_remove(position))
+    Ok(v.remove(position))
 }
 
 impl FromStr for Observation {
@@ -131,5 +115,5 @@ fn do_part2(input: &str) -> anyhow::Result<usize> {
 
 benchtest::benchtest! {
     part1: do_part1(test::black_box(INPUT)).unwrap() => 412,
-    part2: do_part2(test::black_box(INPUT)).unwrap() => 0
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 978171
 }
