@@ -17,3 +17,4 @@ mod lanternfish;
 mod sonar_sweep;
 mod treachery_of_whales;
 mod utils;
+mod seven_segment_search;

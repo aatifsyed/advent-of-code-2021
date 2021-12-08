@@ -6,3 +6,4 @@
 - 2021, day 05: [hydrothermal_venture](./src/hydrothermal_venture.rs) Good
 - 2021, day 06: [lanternfish](./src/lanternfish.rs) Good
 - 2021, day 07: [treachery_of_whales](./src/treachery_of_whales.rs)
+- 2021, day 08: [seven_segment_search](./src/seven_segment_search.rs)
