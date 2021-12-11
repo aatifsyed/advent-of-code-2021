@@ -21,12 +21,34 @@ fn parse(input: &str) -> anyhow::Result<Array2D<u32>> {
 
 struct Kernel<T> {
     item: T,
-    neighbours: [Option<T>; 8],
+    top_left: Option<T>,
+    top_middle: Option<T>,
+    top_right: Option<T>,
+    left: Option<T>,
+    right: Option<T>,
+    bottom_left: Option<T>,
+    bottom_middle: Option<T>,
+    bottom_right: Option<T>,
 }
 
 impl<T: Num + Ord + Copy> Kernel<T> {
+    fn direct_neighbours(&self) -> [Option<T>; 4] {
+        [self.top_middle, self.left, self.right, self.bottom_middle]
+    }
+    fn all_neighbours(&self) -> [Option<T>; 8] {
+        [
+            self.top_left,
+            self.top_middle,
+            self.top_right,
+            self.left,
+            self.right,
+            self.bottom_left,
+            self.bottom_middle,
+            self.bottom_right,
+        ]
+    }
     fn is_low(&self) -> bool {
-        self.neighbours
+        self.all_neighbours()
             .iter()
             .filter_map(|n| n.as_ref())
             .all(|n| *n > self.item)
@@ -43,26 +65,40 @@ trait ArrayExt<T> {
 impl<T: Copy> ArrayExt<T> for Array2D<T> {
     fn kernel_for(&self, row: usize, column: usize) -> Option<Kernel<T>> {
         let item = *self.get(row, column)?;
-        let mut neighbours = [None; 8];
+        let mut top_left = None;
+        let mut top_middle = None;
+        let mut top_right = None;
+        let mut left = None;
+        let mut bottom_left = None;
 
         if row > 0 && column > 0 {
             // Could also do wrapping_sub because we're unlikely to have a 2DArray that big
-            neighbours[0] = self.get(row - 1, column - 1).map(Clone::clone); // Top left
-            neighbours[5] = self.get(row - 1, column - 1).map(Clone::clone); // Bottom left
+            top_left = self.get(row - 1, column - 1).map(Clone::clone);
+            bottom_left = self.get(row - 1, column - 1).map(Clone::clone);
         }
         if row > 0 {
-            neighbours[1] = self.get(row - 1, column).map(Clone::clone); // Top middle
-            neighbours[2] = self.get(row - 1, column + 1).map(Clone::clone); // Top right
+            top_middle = self.get(row - 1, column).map(Clone::clone);
+            top_right = self.get(row - 1, column + 1).map(Clone::clone);
         }
         if column > 0 {
-            neighbours[3] = self.get(row, column - 1).map(Clone::clone); // Left
+            left = self.get(row, column - 1).map(Clone::clone);
         }
 
-        neighbours[4] = self.get(row, column + 1).map(Clone::clone); // Right
-        neighbours[6] = self.get(row + 1, column).map(Clone::clone); // Bottom middle
-        neighbours[7] = self.get(row + 1, column + 1).map(Clone::clone); // Bottom right
+        let right = self.get(row, column + 1).map(Clone::clone);
+        let bottom_middle = self.get(row + 1, column).map(Clone::clone);
+        let bottom_right = self.get(row + 1, column + 1).map(Clone::clone);
 
-        Some(Kernel { item, neighbours })
+        Some(Kernel {
+            item,
+            top_left,
+            top_middle,
+            top_right,
+            left,
+            right,
+            bottom_left,
+            bottom_middle,
+            bottom_right,
+        })
     }
 }
 
@@ -83,8 +119,33 @@ fn do_part1(input: &str) -> anyhow::Result<u32> {
     }
     Ok(total_risk_level)
 }
+
 fn do_part2(input: &str) -> anyhow::Result<usize> {
+    let height_map = parse(input)?;
+    let mut basin_sizes = Vec::new();
+    for row in 0..height_map.num_rows() {
+        for column in 0..height_map.num_columns() {
+            let kernel = height_map.kernel_for(row, column).expect("Valid index");
+            if kernel.is_low() {
+                let mut fill = 1;
+                count_fill(&mut fill, row, column, &height_map);
+                basin_sizes.push(fill);
+            }
+        }
+    }
+
     Ok(0)
+}
+
+fn count_fill(count: &mut usize, row: usize, column: usize, array: &Array2D<u32>) {
+    let kernel = array.kernel_for(row, column).unwrap();
+    match kernel.top_middle {
+        Some(9) | None => (),
+        Some(_) => {
+            *count += 1;
+            count_fill(count, row, column, array)
+        }
+    }
 }
 
 benchtest::benchtest! {
