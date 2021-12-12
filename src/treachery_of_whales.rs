@@ -89,7 +89,7 @@ fn mean<T: Num + Copy>(of: &[T]) -> T {
     total / length
 }
 
-fn median<T: Num + Ord>(of: &mut [T]) -> Option<&T> {
+pub fn median<T: Num + Ord>(of: &mut [T]) -> Option<&T> {
     of.sort_unstable();
     let halfway = of.len() / 2;
     of.get(halfway)
