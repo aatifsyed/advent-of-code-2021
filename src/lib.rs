@@ -21,3 +21,4 @@ mod sonar_sweep;
 mod treachery_of_whales;
 mod utils;
 mod syntax_scoring;
+mod dumbo_octopus;
