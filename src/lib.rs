@@ -20,3 +20,4 @@ mod smoke_basin;
 mod sonar_sweep;
 mod treachery_of_whales;
 mod utils;
+mod syntax_scoring;

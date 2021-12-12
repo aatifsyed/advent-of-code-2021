@@ -8,3 +8,4 @@
 - 2021, day 07: [treachery_of_whales](./src/treachery_of_whales.rs)
 - 2021, day 08: [seven_segment_search](./src/seven_segment_search.rs)
 - 2021, day 09: [smoke_basin](./src/smoke_basin.rs)
+- 2021, day 10: [syntax_scoring](./src/syntax_scoring.rs)
