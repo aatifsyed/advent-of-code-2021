@@ -2,6 +2,7 @@
 #![feature(
     bool_to_option,
     hash_drain_filter,
+    if_let_guard,
     int_abs_diff,
     iter_zip,
     option_result_contains,
@@ -14,8 +15,8 @@ mod dive;
 mod giant_squid;
 mod hydrothermal_venture;
 mod lanternfish;
+mod seven_segment_search;
+mod smoke_basin;
 mod sonar_sweep;
 mod treachery_of_whales;
 mod utils;
-mod seven_segment_search;
-mod smoke_basin;

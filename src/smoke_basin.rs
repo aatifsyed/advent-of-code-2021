@@ -1,3 +1,6 @@
+//! This is a mess, I got lazy
+use std::collections::HashSet;
+
 use anyhow::{ensure, Context};
 use array2d::Array2D;
 use num::Num;
@@ -21,34 +24,18 @@ fn parse(input: &str) -> anyhow::Result<Array2D<u32>> {
 
 struct Kernel<T> {
     item: T,
-    top_left: Option<T>,
-    top_middle: Option<T>,
-    top_right: Option<T>,
+    up: Option<T>,
     left: Option<T>,
     right: Option<T>,
-    bottom_left: Option<T>,
-    bottom_middle: Option<T>,
-    bottom_right: Option<T>,
+    down: Option<T>,
 }
 
 impl<T: Num + Ord + Copy> Kernel<T> {
-    fn direct_neighbours(&self) -> [Option<T>; 4] {
-        [self.top_middle, self.left, self.right, self.bottom_middle]
-    }
-    fn all_neighbours(&self) -> [Option<T>; 8] {
-        [
-            self.top_left,
-            self.top_middle,
-            self.top_right,
-            self.left,
-            self.right,
-            self.bottom_left,
-            self.bottom_middle,
-            self.bottom_right,
-        ]
+    fn neighbours(&self) -> [Option<T>; 4] {
+        [self.up, self.left, self.right, self.down]
     }
     fn is_low(&self) -> bool {
-        self.all_neighbours()
+        self.neighbours()
             .iter()
             .filter_map(|n| n.as_ref())
             .all(|n| *n > self.item)
@@ -60,45 +47,73 @@ impl<T: Num + Ord + Copy> Kernel<T> {
 
 trait ArrayExt<T> {
     fn kernel_for(&self, row: usize, column: usize) -> Option<Kernel<T>>;
+    fn flood_fill(&self, row: usize, column: usize) -> HashSet<(usize, usize)>;
 }
 
-impl<T: Copy> ArrayExt<T> for Array2D<T> {
-    fn kernel_for(&self, row: usize, column: usize) -> Option<Kernel<T>> {
-        let item = *self.get(row, column)?;
-        let mut top_left = None;
-        let mut top_middle = None;
-        let mut top_right = None;
+impl ArrayExt<u32> for Array2D<u32> {
+    fn kernel_for(&self, row: usize, column: usize) -> Option<Kernel<u32>> {
+        let item = self.get(row, column)?;
+        let mut up = None;
         let mut left = None;
-        let mut bottom_left = None;
 
-        if row > 0 && column > 0 {
-            // Could also do wrapping_sub because we're unlikely to have a 2DArray that big
-            top_left = self.get(row - 1, column - 1).map(Clone::clone);
-            bottom_left = self.get(row - 1, column - 1).map(Clone::clone);
-        }
         if row > 0 {
-            top_middle = self.get(row - 1, column).map(Clone::clone);
-            top_right = self.get(row - 1, column + 1).map(Clone::clone);
+            up = self.get(row - 1, column).map(Clone::clone);
         }
         if column > 0 {
             left = self.get(row, column - 1).map(Clone::clone);
         }
 
         let right = self.get(row, column + 1).map(Clone::clone);
-        let bottom_middle = self.get(row + 1, column).map(Clone::clone);
-        let bottom_right = self.get(row + 1, column + 1).map(Clone::clone);
+        let down = self.get(row + 1, column).map(Clone::clone);
 
         Some(Kernel {
-            item,
-            top_left,
-            top_middle,
-            top_right,
+            item: item.clone(),
+            up,
             left,
             right,
-            bottom_left,
-            bottom_middle,
-            bottom_right,
+            down,
         })
+    }
+
+    fn flood_fill(&self, row: usize, column: usize) -> HashSet<(usize, usize)> {
+        let mut already_visted = HashSet::new();
+        flood_fill_inner(self, &mut already_visted, row, column);
+        already_visted
+    }
+}
+
+fn flood_fill_inner(
+    array: &Array2D<u32>,
+    already_visted: &mut HashSet<(usize, usize)>,
+    row: usize,
+    column: usize,
+) {
+    match already_visted.insert((row, column)) {
+        true => (),
+        false => return,
+    }
+
+    if let Some(kernel) = array.kernel_for(row, column) {
+        if let Some(up) = kernel.up {
+            if up < 9 {
+                flood_fill_inner(array, already_visted, row - 1, column)
+            }
+        }
+        if let Some(down) = kernel.down {
+            if down < 9 {
+                flood_fill_inner(array, already_visted, row + 1, column)
+            }
+        }
+        if let Some(left) = kernel.left {
+            if left < 9 {
+                flood_fill_inner(array, already_visted, row, column - 1)
+            }
+        }
+        if let Some(right) = kernel.right {
+            if right < 9 {
+                flood_fill_inner(array, already_visted, row, column + 1)
+            }
+        }
     }
 }
 
@@ -127,28 +142,22 @@ fn do_part2(input: &str) -> anyhow::Result<usize> {
         for column in 0..height_map.num_columns() {
             let kernel = height_map.kernel_for(row, column).expect("Valid index");
             if kernel.is_low() {
-                let mut fill = 1;
-                count_fill(&mut fill, row, column, &height_map);
-                basin_sizes.push(fill);
+                let size = height_map.flood_fill(row, column).len();
+                basin_sizes.push(size)
             }
         }
     }
-
-    Ok(0)
-}
-
-fn count_fill(count: &mut usize, row: usize, column: usize, array: &Array2D<u32>) {
-    let kernel = array.kernel_for(row, column).unwrap();
-    match kernel.top_middle {
-        Some(9) | None => (),
-        Some(_) => {
-            *count += 1;
-            count_fill(count, row, column, array)
-        }
-    }
+    basin_sizes.sort();
+    let top3 = basin_sizes
+        .into_iter()
+        .rev()
+        .take(3)
+        .reduce(|a, b| a * b)
+        .context("Not enough basins")?;
+    Ok(top3)
 }
 
 benchtest::benchtest! {
     part1: do_part1(test::black_box(INPUT)).unwrap() => 478,
-    part2: do_part2(test::black_box(INPUT)).unwrap() => 0
+    part2: do_part2(test::black_box(INPUT)).unwrap() => 1327014
 }
